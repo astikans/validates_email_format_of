@@ -19,6 +19,10 @@ module ValidatesEmailFormatOf
     @mx.size > 0 ? true : false
   end
 
+  def self.simple_domain_validation(email)
+    email.to_s.downcase.match(/\@((?:[-a-z0-9]+\.)+[a-z]{2,})/).present?
+  end
+
   DEFAULT_MESSAGE = "does not appear to be valid"
   DEFAULT_MX_MESSAGE = "is not routable"
   ERROR_MESSAGE_I18N_KEY = :invalid_email_address
@@ -45,7 +49,8 @@ module ValidatesEmailFormatOf
                           :mx_message => options[:generate_message] ? ERROR_MX_MESSAGE_I18N_KEY : (defined?(I18n) ? I18n.t(ERROR_MX_MESSAGE_I18N_KEY, :scope => [:activemodel, :errors, :messages], :default => DEFAULT_MX_MESSAGE) : DEFAULT_MX_MESSAGE),
                           :domain_length => 255,
                           :local_length => 64,
-                          :generate_message => false
+                          :generate_message => false,
+                          :simple_domain_validation => false
                           }
       opts = options.merge(default_options) {|key, old, new| old}  # merge the default options into the specified options, retaining all specified options
 
@@ -74,6 +79,10 @@ module ValidatesEmailFormatOf
 
       if opts[:check_mx] and !self.validate_email_domain(email)
         return [ opts[:mx_message] ]
+      end
+
+      if opts[:simple_domain_validation] and !self.simple_domain_validation(email)
+        return [ opts[:message] ]
       end
 
       return nil    # represents no validation errors
